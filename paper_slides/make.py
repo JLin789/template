@@ -1,34 +1,25 @@
 ###################
 ### ENVIRONMENT ###
 ###################
-import git
-import imp
 import os
-
-### SET DEFAULT PATHS
-ROOT = git.Repo('.', search_parent_directories = True).working_tree_dir 
-
-PATHS = {
-    'root'             : ROOT,
-    'lib'              : os.path.join(ROOT, 'lib'),
-    'config'           : os.path.join(ROOT, 'config.yaml'),
-    'config_user'      : os.path.join(ROOT, 'config_user.yaml'),
-    'input_dir'        : 'input', 
-    'external_dir'     : 'external',
-    'output_dir'       : 'output',
-    'output_local_dir' : 'output_local',
-    'makelog'          : 'log/make.log',         
-    'output_statslog'  : 'log/output_stats.log', 
-    'source_maplog'    : 'log/source_map.log',  
-    'source_statslog'  : 'log/source_stats.log',
-}
+import sys
 
 ### LOAD GSLAB MAKE
-f, path, desc = imp.find_module('gslab_make', [PATHS['lib']]) 
-gs = imp.load_module('gslab_make', f, path, desc)
+ROOT = '..'
+gslm_path = os.path.join(ROOT, 'lib', 'gslab_make')
+
+sys.path.append(gslm_path)
+import gslab_make as gs
+
+### PULL PATHS FROM CONFIG
+PATHS = {
+    'root': ROOT,
+    'config': os.path.join(ROOT, 'config.yaml')
+}
+PATHS = gs.update_internal_paths(PATHS)
 
 ### LOAD CONFIG USER 
-PATHS = gs.update_paths(PATHS)
+PATHS = gs.update_external_paths(PATHS)
 gs.update_executables(PATHS)
 
 ############
@@ -40,23 +31,24 @@ gs.remove_dir(['input', 'external'])
 gs.clear_dir(['output', 'log'])
 gs.start_makelog(PATHS)
 
-### GET INPUT FILES 
+### MAKE LINKS TO INPUT AND EXTERNAL FILES
 inputs = gs.copy_inputs(PATHS, ['input.txt'])
 externals = gs.copy_externals(PATHS, ['external.txt'])
 gs.write_source_logs(PATHS, inputs + externals)
 gs.get_modified_sources(PATHS, inputs + externals)
 
+## MAKE VERSION LOGS
+gs.write_version_logs(PATHS)
+
 ### FILL TABLES
-gs.tablefill(template = 'code/tables.lyx', 
+gs.tablefill(template = 'code/tables.tex', 
              inputs   = 'input/regression.csv', 
-             output   = 'output/tables_filled.lyx')
+             output   = 'output/tables_filled.tex')
 
 ### RUN SCRIPTS
-gs.run_lyx(PATHS, program = 'code/paper.lyx')
-gs.run_lyx(PATHS, program = 'code/online_appendix.lyx')
-gs.run_lyx(PATHS, program = 'code/slides.lyx')
-gs.run_lyx(PATHS, program = 'code/ondeck.lyx')
-gs.run_lyx(PATHS, program = 'code/text.lyx')
+gs.run_latex(PATHS, program = 'code/paper.tex')
+gs.run_latex(PATHS, program = 'code/online_appendix.tex')
+gs.run_latex(PATHS, program = 'code/slides.tex')
 
 ### LOG OUTPUTS
 gs.log_files_in_output(PATHS)
